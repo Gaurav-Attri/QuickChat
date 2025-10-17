@@ -1,5 +1,7 @@
 import User from "../models/User.js";
 import Message from "../models/Message.js";
+import cloudinary from "../lib/cloudinary.js";
+import {io, userSocketMap} from "../server.js";
 
 // Retreiving all users except the logged-in user to show in the sidebar
 export const getUsersForSidebar = async (req, res) => {
@@ -26,7 +28,7 @@ export const getUsersForSidebar = async (req, res) => {
 }
 
 // Retreiving all messages from the selected user
-export const getMessage = async (req, res) => {
+export const getMessages = async (req, res) => {
     try{
         const {id: selectedUserId} = req.params;
         const myId = req.user._id;
@@ -47,7 +49,7 @@ export const getMessage = async (req, res) => {
 }
 
 // Marking a message with given id as seen
-export const markMessagesAsSeen = async (req, res) => {
+export const markMessageAsSeen = async (req, res) => {
     try{
         const {id} = req.params;
         await Message.findByIdAndUpdate(id, {seen: true});
@@ -56,5 +58,39 @@ export const markMessagesAsSeen = async (req, res) => {
     catch(error){
         console.log(error.message);
         res.json({success: false, message: error.message}); 
+    }
+}
+
+// Sending a message to the selected user
+export const sendMessage = async (req, res) => {
+    try{
+        const {text, image} = req.body;
+        const receiverId = req.params.id;
+        const senderId = req.user._id;
+
+        let imageUrl;
+        if(image){
+            const uploadResponse = await cloudinary.uploader.upload(image);
+            imageUrl = uploadResponse.secure_url;
+        }
+
+        const newMessage = await Message.create({
+            senderId,
+            receiverId,
+            text,
+            image: imageUrl
+        })
+
+        // Emit the new message to the receiver's socket
+        const receiverSocketId = userSocketMap[receiverId];
+        if(receiverSocketId){
+            io.to(receiverSocketId).emit("newMessage", newMessage);
+        }
+
+        res.json({success: true, newMessage});
+    }
+    catch(error){
+        console.log(error.message);
+        res.json({success: false, message: error.message});
     }
 }
