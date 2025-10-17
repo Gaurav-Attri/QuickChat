@@ -52,3 +52,7 @@ export const login = async (req, res) => {
         res.json({success: false, message: error.message});
     }
 }
+
+export const checkAuth = (req, res) => {
+    res.json({success: true, userData: req.user});
+}
