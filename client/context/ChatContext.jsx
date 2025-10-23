@@ -82,7 +82,7 @@ export const ChatProvider = ({children}) => {
     }, [socket, selectedUser]);
 
     const value = {
-        messages, setMessages, users, selectedUser, getUsers, sendMessage, setSelectedUser, unseenMessages, setUnseenMessages
+        messages, users, selectedUser, getUsers, sendMessage, setSelectedUser, unseenMessages, setUnseenMessages, getMessages
     };
 
     return (
